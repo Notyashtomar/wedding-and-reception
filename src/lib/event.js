@@ -1,31 +1,40 @@
 import config from '../weddingConfig'
 
-const { event, groom, bride, venue, contact, closing } = config
-
-export const eventStart = new Date(event.start)
-export const eventEnd = new Date(eventStart.getTime() + event.durationHours * 3600 * 1000)
+const { groom, bride, contact, rsvp } = config
 
 const toUtcStamp = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
-
-const title = `${event.rite} – ${groom.firstName} & ${bride.firstName}`
-const location = `${venue.name}, ${venue.addressLines.join(' ').replace(/,$/, '')}`
-const phones = contact.phones.map(formatPhone).join(' / ')
-const details = `With love and blessings, ${closing.hosts}. Contact: ${phones}`
-
-export const googleCalendarUrl =
-  'https://calendar.google.com/calendar/render?' +
-  new URLSearchParams({
-    action: 'TEMPLATE',
-    text: title,
-    dates: `${toUtcStamp(eventStart)}/${toUtcStamp(eventEnd)}`,
-    details,
-    location,
-    ctz: event.timeZone,
-  }).toString()
-
 const icsEscape = (s) => s.replace(/\\/g, '\\\\').replace(/([,;])/g, '\\$1')
 
-export function icsDataUrl() {
+export function formatPhone(num) {
+  const d = num.replace(/\D/g, '').slice(-10)
+  return `${contact.countryCode} ${d.slice(0, 5)} ${d.slice(5)}`
+}
+
+export const telHref = (num) => `tel:${contact.countryCode}${num.replace(/\D/g, '').slice(-10)}`
+
+export const mapsUrl = (venue) => 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(venue.mapsQuery)
+
+const phones = contact.phones.map(formatPhone).join(' / ')
+
+// Start/end, Google Calendar link and an .ics download for one event from the config.
+export function eventLinks(evt) {
+  const start = new Date(evt.start)
+  const end = new Date(start.getTime() + evt.durationHours * 3600 * 1000)
+  const title = `${evt.name} – ${groom.firstName} weds ${bride.firstName}`
+  const location = `${evt.venue.name}, ${evt.venue.addressLines.join(' ').replace(/,$/, '')}`
+  const details = `${rsvp.complimentsLead} ${rsvp.compliments}. Contact: ${phones}`
+
+  const google =
+    'https://calendar.google.com/calendar/render?' +
+    new URLSearchParams({
+      action: 'TEMPLATE',
+      text: title,
+      dates: `${toUtcStamp(start)}/${toUtcStamp(end)}`,
+      details,
+      location,
+      ctz: evt.timeZone,
+    }).toString()
+
   const ics = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -33,10 +42,10 @@ export function icsDataUrl() {
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',
-    `UID:engagement-${groom.firstName}-${bride.firstName}-${toUtcStamp(eventStart)}`.toLowerCase(),
+    `UID:${evt.id}-${groom.firstName}-${bride.firstName}-${toUtcStamp(start)}`.toLowerCase(),
     `DTSTAMP:${toUtcStamp(new Date())}`,
-    `DTSTART:${toUtcStamp(eventStart)}`,
-    `DTEND:${toUtcStamp(eventEnd)}`,
+    `DTSTART:${toUtcStamp(start)}`,
+    `DTEND:${toUtcStamp(end)}`,
     `SUMMARY:${icsEscape(title)}`,
     `LOCATION:${icsEscape(location)}`,
     `DESCRIPTION:${icsEscape(details)}`,
@@ -48,17 +57,12 @@ export function icsDataUrl() {
     'END:VEVENT',
     'END:VCALENDAR',
   ].join('\r\n')
-  return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics)
+
+  return {
+    start,
+    google,
+    ics: 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics),
+    icsName: `${groom.firstName}-${bride.firstName}-${evt.name.replace(/\s+/g, '-')}.ics`,
+    maps: mapsUrl(evt.venue),
+  }
 }
-
-export const icsFileName = `${groom.firstName}-${bride.firstName}-Engagement.ics`
-
-export const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(venue.mapsQuery)
-export const directionsUrl = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(venue.mapsQuery)
-
-export function formatPhone(num) {
-  const d = num.replace(/\D/g, '').slice(-10)
-  return `${contact.countryCode} ${d.slice(0, 5)} ${d.slice(5)}`
-}
-
-export const telHref = (num) => `tel:${contact.countryCode}${num.replace(/\D/g, '').slice(-10)}`

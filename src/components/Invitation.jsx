@@ -1,47 +1,54 @@
 import { forwardRef } from 'react'
-import { Panel, Reveal } from './Reveal'
-import { Rule } from './Ornaments'
+import { Panel, Reveal, RevealGroup } from './Reveal'
+import { Chapter, Crown, Rule } from './Ornaments'
 import config from '../weddingConfig'
 
-const { groom, bride, event, invitation } = config
+const { groom, bride, invitation } = config
 
 function Person({ person }) {
   return (
-    <>
-      <p className="person spaced">{person.fullName}</p>
-      <p className="rel spaced">{person.relation}</p>
+    <Reveal className="person-block">
+      <p className="person foil">{person.firstName}</p>
       <p className="parents">
-        {person.mother}
+        {person.relation} {person.mother}
         <br />
-        <span className="and">and</span> {person.father}
+        <span className="and">&amp;</span> {person.father}
       </p>
-    </>
+      {person.residence && <p className="res">({person.residence})</p>}
+    </Reveal>
   )
 }
 
 const Invitation = forwardRef(function Invitation(_, ref) {
   return (
-    <Panel ref={ref} className="bg-invite" id="s2" aria-label="Invitation">
-      <Reveal className="arch">
-        <div className="om-mark" lang="hi" aria-label="Om">
+    <Panel ref={ref} className="bg-invite invite" id="s2" aria-label="Invitation">
+      <Chapter n="I">The Invitation</Chapter>
+      <RevealGroup className="arch">
+        <Crown />
+        <Reveal className="om-mark" lang="hi" aria-label="Om">
           ॐ
-        </div>
-        <p className="lead">
+        </Reveal>
+        <Reveal as="p" className="lead">
           {invitation.lead.map((line, i) => (
             <span key={i}>
               {line}
               <br />
             </span>
           ))}
-        </p>
-        <Rule />
-        <p className="rite spaced">{event.rite}</p>
-        <p className="gloss">{event.riteGloss}</p>
-        <p className="of">of</p>
+        </Reveal>
+        <Reveal as="p" className="rite">
+          {invitation.rite}
+        </Reveal>
+        <Reveal>
+          <Rule />
+          <p className="of">of</p>
+        </Reveal>
         <Person person={groom} />
-        <div className="amp">&amp;</div>
+        <Reveal as="p" className="weds-mark">
+          weds
+        </Reveal>
         <Person person={bride} />
-      </Reveal>
+      </RevealGroup>
     </Panel>
   )
 })

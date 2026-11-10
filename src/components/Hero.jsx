@@ -1,28 +1,47 @@
 import { forwardRef } from 'react'
-import { Panel, Reveal, RevealGroup } from './Reveal'
+import { Panel, Reveal, TitleReveal } from './Reveal'
+import { Rule } from './Ornaments'
 import config from '../weddingConfig'
 
-const { groom, bride, event, images } = config
+const { groom, bride, blessings, wedding, images } = config
 
+// The opening title card: blessings roll in like film credits, then the names.
 const Hero = forwardRef(function Hero({ active }, ref) {
   return (
-    <Panel ref={ref} active={active} className="hero" id="s1" aria-label={`${groom.firstName} and ${bride.firstName}`}>
-      <RevealGroup className="arch arch-hero">
-        <Reveal>
-          <img className="monogram" src={images.monogram} alt={`${groom.firstName} and ${bride.firstName} monogram`} />
+    <Panel ref={ref} active={active} delay={1.7} className="hero" id="s1" aria-label={`${groom.firstName} weds ${bride.firstName}`}>
+      <Reveal as="p" className="credit-lead">
+        {blessings.lead}
+      </Reveal>
+      <Reveal className="elders">
+        <p>{blessings.elders[0]}</p>
+        <p className="and">&amp;</p>
+        <p>{blessings.elders[1]}</p>
+      </Reveal>
+      <Reveal>
+        <Rule />
+      </Reveal>
+      <Reveal>
+        <img className="monogram" src={images.monogram} alt="" />
+      </Reveal>
+      <h1 className="names">
+        <TitleReveal as="span" className="name foil">
+          {groom.firstName}
+        </TitleReveal>
+        <Reveal as="span" className="weds">
+          <i />
+          weds
+          <i />
         </Reveal>
-        <Reveal as="p" className="kicker spaced">
-          {event.name}
-        </Reveal>
-        <Reveal>
-          <h1 className="name">{groom.firstName}</h1>
-          <div className="amp">&amp;</div>
-          <h1 className="name">{bride.firstName}</h1>
-        </Reveal>
-        <Reveal as="p" className="when">
-          {event.shortDate}
-        </Reveal>
-      </RevealGroup>
+        <TitleReveal as="span" className="name foil">
+          {bride.firstName}
+        </TitleReveal>
+      </h1>
+      <Reveal as="p" className="when">
+        {wedding.shortDate}
+      </Reveal>
+      <Reveal as="p" className="sub">
+        Wedding &amp; Reception
+      </Reveal>
     </Panel>
   )
 })

@@ -7,12 +7,21 @@ const SRC = 'assets-src'
 const OUT = 'public/images'
 mkdirSync(OUT, { recursive: true })
 
-const backgrounds = ['bg-hero', 'bg-invite', 'bg-date', 'bg-venue', 'bg-close']
+const backgrounds = ['bg-hero', 'bg-invite', 'bg-wedding', 'bg-venue', 'bg-reception', 'bg-close']
 
 for (const name of backgrounds) {
-  await sharp(`${SRC}/${name}.jpg`).webp({ quality: 74, effort: 6 }).toFile(`${OUT}/${name}.webp`)
+  await sharp(`${SRC}/${name}.jpg`).webp({ quality: 76, effort: 6 }).toFile(`${OUT}/${name}.webp`)
   console.log('bg', name)
 }
+
+// The palace doors are symmetrical about x = 362; the left leaf is kept and mirrored in CSS
+// for the right leaf, so the two always meet cleanly at the seam.
+const DOOR_SEAM = 362
+await sharp(`${SRC}/doors.jpg`)
+  .extract({ left: 0, top: 0, width: DOOR_SEAM, height: 1280 })
+  .webp({ quality: 78, effort: 6 })
+  .toFile(`${OUT}/door.webp`)
+console.log('door')
 
 // Removes the flat white backdrop: every white region touching the border, plus enclosed
 // white regions of at least `minEnclosed` pixels. Smaller enclosed regions (lily petals)
@@ -66,10 +75,10 @@ async function cutOut(name, width, minEnclosed) {
 await cutOut('ganesh', 280, 0)
 await cutOut('monogram', 360, 2000)
 
-const CREAM = { r: 239, g: 226, b: 198, alpha: 1 }
+const NIGHT = { r: 22, g: 8, b: 12, alpha: 1 }
 
 const mono = await sharp(`${OUT}/monogram.webp`).resize({ width: 150, height: 150, fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } }).toBuffer()
-await sharp({ create: { width: 180, height: 180, channels: 4, background: CREAM } })
+await sharp({ create: { width: 180, height: 180, channels: 4, background: NIGHT } })
   .composite([{ input: mono, gravity: 'center' }])
   .png()
   .toFile(`${OUT}/favicon.png`)
@@ -77,15 +86,15 @@ console.log('favicon')
 
 // Link-preview card shown by WhatsApp and other messengers.
 const ogMono = await sharp(`${OUT}/monogram.webp`).resize({ height: 300 }).toBuffer()
-const glow = Buffer.from(
+const shade = Buffer.from(
   `<svg width="1200" height="630"><defs><radialGradient id="g" cx="50%" cy="50%" r="50%">
-   <stop offset="0" stop-color="#f8eed8" stop-opacity=".95"/><stop offset=".6" stop-color="#f8eed8" stop-opacity=".7"/>
-   <stop offset="1" stop-color="#f8eed8" stop-opacity="0"/></radialGradient></defs>
-   <ellipse cx="600" cy="315" rx="380" ry="290" fill="url(#g)"/></svg>`,
+   <stop offset="0" stop-color="#16080c" stop-opacity=".82"/><stop offset=".55" stop-color="#16080c" stop-opacity=".55"/>
+   <stop offset="1" stop-color="#16080c" stop-opacity="0"/></radialGradient></defs>
+   <ellipse cx="600" cy="315" rx="400" ry="300" fill="url(#g)"/></svg>`,
 )
 await sharp(`${SRC}/bg-hero.jpg`)
   .resize({ width: 1200, height: 630, fit: 'cover', position: 'centre' })
-  .composite([{ input: glow }, { input: ogMono, gravity: 'center' }])
+  .composite([{ input: shade }, { input: ogMono, gravity: 'center' }])
   .jpeg({ quality: 82, mozjpeg: true })
   .toFile(`${OUT}/og.jpg`)
 console.log('og')

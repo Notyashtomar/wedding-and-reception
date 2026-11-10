@@ -29,7 +29,8 @@ export function ScrollCue({ sectionRefs }) {
     let frame = 0
     const check = () => {
       frame = 0
-      setGone(window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 60)
+      // Once the guest has started scrolling the cue has done its job and would only sit over the cards.
+      setGone(window.scrollY > window.innerHeight * 0.35)
     }
     const request = () => {
       if (!frame) frame = requestAnimationFrame(check)

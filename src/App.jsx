@@ -3,10 +3,12 @@ import { LazyMotion, MotionConfig, domAnimation } from 'motion/react'
 import Gate from './components/Gate'
 import Stage from './components/Stage'
 import Petals from './components/Petals'
+import GoldDust from './components/GoldDust'
 import Hero from './components/Hero'
 import Invitation from './components/Invitation'
-import SaveTheDate from './components/SaveTheDate'
+import Wedding from './components/Wedding'
 import Venue from './components/Venue'
+import Reception from './components/Reception'
 import Closing from './components/Closing'
 import { ScrollCue, SoundToggle } from './components/Controls'
 import useMusic from './hooks/useMusic'
@@ -35,14 +37,17 @@ export default function App() {
         <Gate open={open} onOpen={handleOpen} hasMusic={music.available} />
         {open && music.available && <SoundToggle playing={music.playing} onToggle={music.toggle} />}
         {open && <ScrollCue sectionRefs={sections} />}
+        {config.effects.dust && <GoldDust />}
+        {config.effects.grain && <div className="grain" aria-hidden="true" />}
 
         <main className="card">
           <Stage sectionRefs={sections}>{open && config.effects.petals && <Petals />}</Stage>
           <Hero ref={setSection(0)} active={open} />
           <Invitation ref={setSection(1)} />
-          <SaveTheDate ref={setSection(2)} />
+          <Wedding ref={setSection(2)} />
           <Venue ref={setSection(3)} />
-          <Closing ref={setSection(4)} />
+          <Reception ref={setSection(4)} />
+          <Closing ref={setSection(5)} />
         </main>
       </MotionConfig>
     </LazyMotion>
