@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { LazyMotion, MotionConfig, domAnimation } from 'motion/react'
 import Gate from './components/Gate'
 import Stage from './components/Stage'
@@ -16,14 +16,18 @@ import config from './weddingConfig'
 
 export default function App() {
   const [open, setOpen] = useState(false)
+  const [gateGone, setGateGone] = useState(false)
   const sections = useRef([])
   const music = useMusic(config.music.src, config.music.volume)
   const setSection = (i) => (el) => (sections.current[i] = el)
+  const removeGate = useCallback(() => setGateGone(true), [])
 
+  // Scrolling unlocks only once the doors are gone: flipping overflow mid-swing makes mobile
+  // browsers resize the viewport and repaint every full-screen layer.
   useEffect(() => {
-    document.documentElement.classList.toggle('locked', !open)
-    document.body.classList.toggle('locked', !open)
-  }, [open])
+    document.documentElement.classList.toggle('locked', !gateGone)
+    document.body.classList.toggle('locked', !gateGone)
+  }, [gateGone])
 
   const handleOpen = () => {
     window.scrollTo(0, 0)
@@ -34,7 +38,7 @@ export default function App() {
   return (
     <LazyMotion features={domAnimation} strict>
       <MotionConfig reducedMotion="user">
-        <Gate open={open} onOpen={handleOpen} hasMusic={music.available} />
+        {!gateGone && <Gate opening={open} onOpen={handleOpen} onDone={removeGate} hasMusic={music.available} />}
         {open && music.available && <SoundToggle playing={music.playing} onToggle={music.toggle} />}
         {open && <ScrollCue sectionRefs={sections} />}
         {config.effects.dust && <GoldDust />}

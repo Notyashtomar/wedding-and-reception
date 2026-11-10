@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { AnimatePresence, m } from 'motion/react'
+import { m } from 'motion/react'
 import { EASE } from '../lib/ease'
 import config from '../weddingConfig'
 
 const { gate, images, groom, bride } = config
-const SWING = [0.7, 0, 0.18, 1]
+// Must outlast the longest opening animation in index.css (doors fade out by 3.2s).
+const OPENING_MS = 3300
 
 const content = {
   hidden: {},
@@ -28,95 +29,74 @@ function useFontsReady() {
 }
 
 function Door({ side }) {
-  const angle = side === 'left' ? 84 : -84
   return (
-    <m.div
-      className={`door ${side}`}
-      exit={{ rotateY: angle, transition: { duration: 2.3, delay: 0.55, ease: SWING } }}
-    >
+    <div className={`door ${side}`}>
       <div className="leaf" style={{ backgroundImage: `url(${images.door})` }} />
-      <m.div className="shade" initial={{ opacity: 0 }} exit={{ opacity: 0.85, transition: { duration: 2, delay: 0.7, ease: 'easeIn' } }} />
-    </m.div>
+      <div className="shade" />
+    </div>
   )
 }
 
-export default function Gate({ open, onOpen, hasMusic }) {
+// The opening is pure CSS (`.gate.opening` in index.css) so the compositor runs it on its own
+// thread; the page waking up underneath can't make the doors stutter on a phone.
+export default function Gate({ opening, onOpen, onDone, hasMusic }) {
   const fontsReady = useFontsReady()
+
+  useEffect(() => {
+    if (!opening) return
+    const timer = setTimeout(onDone, OPENING_MS)
+    return () => clearTimeout(timer)
+  }, [opening, onDone])
+
   return (
-    <AnimatePresence>
-      {!open && (
-        <m.div
-          key="gate"
-          className="gate"
-          role="dialog"
-          aria-label="Invitation cover"
-          exit={{ opacity: 0, transition: { duration: 0.8, delay: 2.4, ease: 'easeInOut' } }}
-        >
-          <m.div
-            className="inner"
-            initial={{ scale: 1.08 }}
-            animate={{ scale: 1, transition: { duration: 9, ease: 'easeOut' } }}
-            exit={{ scale: 1.22, transition: { duration: 2.9, delay: 0.3, ease: SWING } }}
-          >
-            <div className="doors">
-              <Door side="left" />
-              <Door side="right" />
-            </div>
-            <m.div className="scrim" exit={{ opacity: 0, transition: { duration: 0.9 } }} />
-            <m.div
-              className="seam"
-              exit={{ opacity: [1, 1, 0], scaleX: [1, 14, 60], transition: { duration: 1.9, times: [0, 0.4, 1], ease: 'easeOut' } }}
-            />
-            <m.div
-              className="flare"
-              initial={{ opacity: 0 }}
-              exit={{ opacity: [0, 0.9, 0], transition: { duration: 2.2, delay: 0.35, times: [0, 0.35, 1] } }}
-            />
+    <div className={`gate${opening ? ' opening' : ''}`} role="dialog" aria-label="Invitation cover">
+      <div className="inner">
+        <div className="drift">
+          <div className="doors">
+            <Door side="left" />
+            <Door side="right" />
+          </div>
+          <div className="scrim" />
+          <div className="seam" />
+          <div className="flare" />
 
-            <m.div
-              className="content"
-              variants={content}
-              initial="hidden"
-              animate={fontsReady ? 'show' : 'hidden'}
-              exit={{ opacity: 0, scale: 0.94, transition: { duration: 0.6, ease: 'easeIn' } }}
-            >
-              <m.p variants={item} className="mantra" lang="hi">
-                {gate.mantra}
-              </m.p>
-              <m.div variants={item}>
-                <img className="ganesh" src={images.ganesh} alt="Shri Ganesh" width="84" height="100" />
-              </m.div>
-              <m.p variants={item} className="presenter">
-                {gate.presenter}
-              </m.p>
-              <m.p variants={item} className="lead">
-                {gate.lead}
-              </m.p>
-              <m.p variants={item} className="title">
-                {gate.title}
-              </m.p>
-              <m.p variants={item} className="couple">
-                <span className="foil">{groom.firstName}</span>
-                <span className="amp">&amp;</span>
-                <span className="foil">{bride.firstName}</span>
-              </m.p>
-              <m.div variants={item}>
-                <button type="button" onClick={onOpen}>
-                  <span>{gate.button}</span>
-                </button>
-              </m.div>
-              {hasMusic && (
-                <m.p variants={item} className="note">
-                  {gate.musicNote}
-                </m.p>
-              )}
+          <m.div className="content" variants={content} initial="hidden" animate={fontsReady ? 'show' : 'hidden'}>
+            <m.p variants={item} className="mantra" lang="hi">
+              {gate.mantra}
+            </m.p>
+            <m.div variants={item}>
+              <img className="ganesh" src={images.ganesh} alt="Shri Ganesh" width="84" height="100" />
             </m.div>
+            <m.p variants={item} className="presenter">
+              {gate.presenter}
+            </m.p>
+            <m.p variants={item} className="lead">
+              {gate.lead}
+            </m.p>
+            <m.p variants={item} className="title">
+              {gate.title}
+            </m.p>
+            <m.p variants={item} className="couple">
+              <span className="foil">{groom.firstName}</span>
+              <span className="amp">&amp;</span>
+              <span className="foil">{bride.firstName}</span>
+            </m.p>
+            <m.div variants={item}>
+              <button type="button" onClick={onOpen}>
+                <span>{gate.button}</span>
+              </button>
+            </m.div>
+            {hasMusic && (
+              <m.p variants={item} className="note">
+                {gate.musicNote}
+              </m.p>
+            )}
           </m.div>
+        </div>
+      </div>
 
-          <m.span className="bar top" aria-hidden="true" initial={{ scaleY: 1 }} exit={{ scaleY: 0, transition: { duration: 1.6, delay: 1.2, ease: EASE } }} />
-          <m.span className="bar bottom" aria-hidden="true" initial={{ scaleY: 1 }} exit={{ scaleY: 0, transition: { duration: 1.6, delay: 1.2, ease: EASE } }} />
-        </m.div>
-      )}
-    </AnimatePresence>
+      <span className="bar top" aria-hidden="true" />
+      <span className="bar bottom" aria-hidden="true" />
+    </div>
   )
 }

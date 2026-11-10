@@ -11,7 +11,7 @@
   --line: rgba(217, 181, 108, 0.5);
   --display: 'Cinzel', 'Cormorant SC', Georgia, serif;
   --serif: 'Cormorant Garamond', 'Cormorant', Georgia, 'Times New Roman', serif;
-  --script: 'Pinyon Script', 'Great Vibes', 'Snell Roundhand', cursive;
+  --script: 'Great Vibes', 'Snell Roundhand', cursive;
   --deva: 'Tiro Devanagari Hindi', 'Noto Serif Devanagari', serif;
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
   color-scheme: dark;
@@ -219,12 +219,12 @@ button { touch-action: manipulation; }
   line-height: 1.12;
   white-space: nowrap;
 }
-.name .foil { display: inline-block; padding: 0 0.22em 0.06em; }
+.name .foil { display: inline-block; padding: 0.2em 0.22em 0.08em; margin: -0.2em 0 -0.02em; }
 .names .weds {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin: -2px 0 -4px;
+  margin: 4px 0 8px;
   font-family: var(--display);
   font-size: clamp(13px, 3.5vw, 15px);
   letter-spacing: 0.5em;
@@ -541,12 +541,19 @@ button { touch-action: manipulation; }
   width: 100%;
   max-width: 480px;
   height: 100%;
+  will-change: transform;
+}
+/* The entrance drift lives on its own wrapper so tapping mid-drift never snaps the opening zoom. */
+.gate .drift {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   padding: 24px;
   will-change: transform;
+  animation: settle 9s ease-out both;
 }
 .doors { position: absolute; inset: 0; perspective: 1100px; perspective-origin: 50% 50%; }
 .door {
@@ -554,13 +561,14 @@ button { touch-action: manipulation; }
   top: 0;
   bottom: 0;
   width: 50.5%;
-  will-change: transform;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
 }
 .door.left { left: 0; transform-origin: 0 50%; }
 .door.right { right: 0; transform-origin: 100% 50%; }
 .door .leaf { position: absolute; inset: 0; background-size: cover; background-position: right center; background-repeat: no-repeat; }
 .door.right .leaf { transform: scaleX(-1); }
-.door .shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.9)); }
+.door .shade { position: absolute; inset: 0; opacity: 0; background: linear-gradient(90deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.9)); }
 .door.right .shade { background: linear-gradient(270deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.9)); }
 .gate .scrim {
   position: absolute;
@@ -590,6 +598,7 @@ button { touch-action: manipulation; }
 .flare {
   position: absolute;
   inset: 0;
+  opacity: 0;
   pointer-events: none;
   background: radial-gradient(ellipse 45% 70% at 50% 50%, rgba(255, 244, 214, 0.95), rgba(255, 196, 110, 0.55) 40%, rgba(255, 160, 60, 0) 78%);
 }
@@ -616,7 +625,7 @@ button { touch-action: manipulation; }
   line-height: 1.25;
   filter: drop-shadow(0 0 14px rgba(255, 190, 90, 0.3));
 }
-.gate .couple .foil { padding: 0 0.12em; }
+.gate .couple .foil { padding: 0.2em 0.12em 0; margin-top: -0.2em; }
 .gate .couple .amp { font-family: var(--serif); font-style: italic; font-size: 0.6em; color: var(--gold); }
 .gate button {
   position: relative;
@@ -658,6 +667,30 @@ button { touch-action: manipulation; }
 .gate .bar { position: fixed; left: 0; right: 0; height: 6.5vh; background: #000; z-index: 3; }
 .gate .bar.top { top: 0; transform-origin: top; }
 .gate .bar.bottom { bottom: 0; transform-origin: bottom; }
+
+/* ---------- gate: opening sequence ----------
+   Compositor-only (transform + opacity) so it never waits on the main thread. The seam burst
+   stays a modest scale: stretching it 60x made Android rasterise a huge texture mid-swing. */
+.gate.opening { pointer-events: none; }
+.gate.opening .inner { animation: push 2.9s cubic-bezier(0.7, 0, 0.18, 1) 0.3s both; }
+.gate.opening .door { animation: swing-l 2.3s cubic-bezier(0.7, 0, 0.18, 1) 0.55s both, fade-out 0.8s ease-in-out 2.4s both; }
+.gate.opening .door.right { animation-name: swing-r, fade-out; }
+.gate.opening .shade { animation: shade 2s ease-in 0.7s both; }
+.gate.opening .scrim { animation: fade-out 0.9s ease-out both; }
+.gate.opening .seam { animation: burst 1.9s ease-out both; }
+.gate.opening .flare { animation: flare 2.2s ease-in-out 0.35s both; }
+.gate.opening .content { animation: recede 0.6s ease-in both; }
+.gate.opening .bar { animation: unbar 1.6s cubic-bezier(0.22, 0.61, 0.36, 1) 1.2s both; }
+@keyframes settle { from { transform: scale(1.08); } }
+@keyframes push { from { transform: scale(1); } to { transform: scale(1.22); } }
+@keyframes swing-l { from { transform: rotateY(0deg); } to { transform: rotateY(84deg); } }
+@keyframes swing-r { from { transform: rotateY(0deg); } to { transform: rotateY(-84deg); } }
+@keyframes shade { to { opacity: 0.85; } }
+@keyframes fade-out { to { opacity: 0; } }
+@keyframes burst { 40% { opacity: 1; transform: scaleX(5); } to { opacity: 0; transform: scaleX(12); } }
+@keyframes flare { 35% { opacity: 0.8; } }
+@keyframes recede { to { opacity: 0; transform: scale(0.94); } }
+@keyframes unbar { to { transform: scaleY(0); } }
 
 /* ---------- music toggle ---------- */
 .sound {
@@ -758,5 +791,7 @@ button { touch-action: manipulation; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .cue svg, .gate button::before, .gate .ganesh, .sound .pulse, .seam::before, .schedule .node::after, .btn.gold::after, .grain { animation: none; }
+  .gate .drift, .gate.opening .inner, .gate.opening .seam, .gate.opening .flare, .gate.opening .shade { animation: none; }
+  .gate.opening .door, .gate.opening .door.right, .gate.opening .bar { animation: fade-out 0.8s ease-in-out 0.2s both; }
   .petals { display: none; }
 }
