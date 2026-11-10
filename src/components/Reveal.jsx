@@ -52,7 +52,8 @@ export function RevealGroup({ as = 'div', className, children, ...rest }) {
 }
 
 // A title that settles into place like a film title card: drifting in from slightly large
-// and wide, purely with transforms.
+// and wide, purely with transforms. Keep gold-foil text on a child, never on this element:
+// mobile WebKit can flash the whole gradient box when a text-clipped element is itself composited.
 const titleItem = {
   hidden: { opacity: 0, scale: 1.18, scaleX: 1.12, y: 10 },
   show: { opacity: 1, scale: 1, scaleX: 1, y: 0, transition: { duration: 2, ease: EASE } },

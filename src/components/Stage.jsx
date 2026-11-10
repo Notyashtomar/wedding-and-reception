@@ -5,26 +5,29 @@ const order = ['hero', 'invite', 'wedding', 'venue', 'reception', 'close']
 const smooth = (x) => x * x * (3 - 2 * x)
 const clamp01 = (x) => Math.max(0, Math.min(1, x))
 
-// Fixed painted backdrops that dissolve into one another as each section scrolls in. Each scene
-// also pushes in slowly as its section is scrolled through (a scroll-linked Ken Burns), so the
-// camera only moves when the guest does and nothing animates while the page is at rest.
+// Fixed painted backdrops that dissolve into one another as each section scrolls in.
+//
+// Phones flicker when the GPU runs out of tile memory, so at most four scenes exist at once:
+// the one just behind the current scene (for scrolling back), the current one, the one fading
+// in, and the next one, shown a whole section early at opacity 0 so it is uploaded long before
+// it is needed. Each scene is an <img>, which the browser composites straight from the decoded
+// image instead of re-rasterising it at the screen's pixel density.
+//
+// On touch screens only opacity changes; a scroll-driven transform is applied from script one
+// frame behind the finger and reads as shake. Pointer devices also get a slow push-in.
 export default function Stage({ sectionRefs, children }) {
   const layers = useRef([])
 
   // Decode every backdrop up front, while the cover is showing, so no image decode
   // lands in the middle of a scroll.
   useEffect(() => {
-    const warm = () =>
-      order.forEach((key) => {
-        const img = new Image()
-        img.src = config.images.backgrounds[key]
-        img.decode?.().catch(() => {})
-      })
+    const warm = () => layers.current.forEach((img) => img?.decode?.().catch(() => {}))
     const id = window.requestIdleCallback ? requestIdleCallback(warm, { timeout: 1500 }) : setTimeout(warm, 300)
     return () => (window.cancelIdleCallback ? cancelIdleCallback(id) : clearTimeout(id))
   }, [])
 
   useEffect(() => {
+    const touch = window.matchMedia('(hover: none), (pointer: coarse)').matches
     // Layout is measured only on resize, so the per-frame work reads nothing but scrollY.
     let starts = []
     let lengths = []
@@ -36,29 +39,41 @@ export default function Stage({ sectionRefs, children }) {
       span = vh * 0.75
     }
 
-    // Every layer stays composited (never hidden) so the GPU never has to re-rasterise a
-    // full-screen image mid-scroll. Only layers that can be seen get new styles, and only
-    // opacity and transform ever change.
-    const last = []
+    const last = layers.current.map(() => ({ shown: null, o: null, t: null }))
     let ticking = false
     const paint = () => {
       ticking = false
       const y = window.scrollY
       const n = layers.current.length
       const opacity = []
-      for (let i = 0; i < n; i++) opacity[i] = i === 0 ? 1 : smooth(clamp01((y - starts[i]) / span))
+      let current = 0
+      for (let i = 0; i < n; i++) {
+        opacity[i] = i === 0 ? 1 : smooth(clamp01((y - starts[i]) / span))
+        if (opacity[i] >= 1) current = i
+      }
       for (let i = 0; i < n; i++) {
         const layer = layers.current[i]
         if (!layer) continue
-        const covered = i + 1 < n && opacity[i + 1] >= 1
-        const o = covered ? 0 : opacity[i]
-        const p = clamp01((y - starts[i]) / lengths[i])
-        const t = o > 0 ? `translate3d(0, ${(-1.6 * p).toFixed(2)}%, 0) scale(${(1.03 + 0.09 * p).toFixed(4)})` : last[i]?.t
-        const os = o.toFixed(3)
-        if (last[i] && last[i].o === os && last[i].t === t) continue
-        last[i] = { o: os, t }
-        layer.style.opacity = os
-        if (t) layer.style.transform = t
+        const prev = last[i]
+        const shown = i >= current - 1 && i <= current + 2
+        if (prev.shown !== shown) {
+          prev.shown = shown
+          layer.style.display = shown ? 'block' : 'none'
+        }
+        if (!shown) continue
+        const o = opacity[i].toFixed(3)
+        if (prev.o !== o) {
+          prev.o = o
+          layer.style.opacity = o
+        }
+        if (!touch) {
+          const p = clamp01((y - starts[i]) / lengths[i])
+          const t = `translate3d(0, ${(-1.6 * p).toFixed(2)}%, 0) scale(${(1.03 + 0.08 * p).toFixed(4)})`
+          if (prev.t !== t) {
+            prev.t = t
+            layer.style.transform = t
+          }
+        }
       }
     }
     const request = () => {
@@ -88,11 +103,15 @@ export default function Stage({ sectionRefs, children }) {
   return (
     <div className="stage" aria-hidden="true">
       {order.map((key, i) => (
-        <div
+        <img
           key={key}
           ref={(el) => (layers.current[i] = el)}
           className={`layer layer-${key}`}
-          style={{ backgroundImage: `url(${config.images.backgrounds[key]})`, opacity: i === 0 ? 1 : 0, transform: 'scale(1.03)' }}
+          src={config.images.backgrounds[key]}
+          alt=""
+          decoding="async"
+          fetchPriority={i === 0 ? 'high' : 'low'}
+          style={{ opacity: i === 0 ? 1 : 0, display: i < 3 ? 'block' : 'none' }}
         />
       ))}
       <div className="vignette" />

@@ -70,17 +70,22 @@ button { touch-action: manipulation; }
 }
 .layer {
   position: absolute;
-  inset: -2% 0;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  top: -2%;
+  left: 0;
+  width: 100%;
+  height: 104%;
+  max-width: none;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(1.03);
   transform-origin: 50% 60%;
-  backface-visibility: hidden;
   will-change: opacity, transform;
+  pointer-events: none;
+  user-select: none;
 }
-.layer-wedding { background-position: 38% center; transform-origin: 40% 70%; }
+.layer-wedding { object-position: 38% center; transform-origin: 40% 70%; }
 .layer-venue { transform-origin: 50% 70%; }
-.layer-reception { background-position: 62% center; transform-origin: 70% 40%; }
+.layer-reception { object-position: 62% center; transform-origin: 70% 40%; }
 .layer-close { transform-origin: 70% 30%; }
 .vignette {
   position: absolute;
@@ -104,9 +109,6 @@ button { touch-action: manipulation; }
 }
 /* On phones the grain is a still, screen-sized layer: an oversized moving texture on top of
    everything costs more GPU memory and fill than the flicker is worth at that size. */
-@media (hover: none), (pointer: coarse) {
-  .grain { inset: 0; animation: none; will-change: auto; opacity: 0.06; }
-}
 @keyframes grain {
   0% { transform: translate3d(0, 0, 0); }
   20% { transform: translate3d(-4%, 3%, 0); }
@@ -215,9 +217,9 @@ button { touch-action: manipulation; }
   font-family: var(--script);
   font-size: clamp(66px, 19vw, 92px);
   line-height: 1.12;
-  padding: 0 0.22em 0.06em;
   white-space: nowrap;
 }
+.name .foil { display: inline-block; padding: 0 0.22em 0.06em; }
 .names .weds {
   display: flex;
   align-items: center;
@@ -740,6 +742,17 @@ button { touch-action: manipulation; }
   .gate .note { display: none; }
   .gate .bar { display: none; }
   .panel { min-height: 0; padding-top: calc(env(safe-area-inset-top, 0px) + 40px); }
+}
+
+/* ---------- touch screens ----------
+   No grain layer over the scrolling page, and no glow filters wrapped around gold-foil text,
+   which mobile browsers re-render (and can flash) whenever a child animates. Kept last so it
+   wins over the base rules above. */
+@media (hover: none), (pointer: coarse) {
+  .grain { display: none; }
+  .names,
+  .gate .couple { filter: none; }
+  .hero::before { background: radial-gradient(ellipse 90% 60% at 50% 44%, rgba(8, 4, 14, 0.82) 0%, rgba(8, 4, 14, 0.55) 55%, rgba(8, 4, 14, 0) 90%); }
 }
 
 @media (prefers-reduced-motion: reduce) {

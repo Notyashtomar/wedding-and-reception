@@ -24,16 +24,16 @@ const Hero = forwardRef(function Hero({ active }, ref) {
         <img className="monogram" src={images.monogram} alt="" />
       </Reveal>
       <h1 className="names">
-        <TitleReveal as="span" className="name foil">
-          {groom.firstName}
+        <TitleReveal as="span" className="name">
+          <span className="foil">{groom.firstName}</span>
         </TitleReveal>
         <Reveal as="span" className="weds">
           <i />
           weds
           <i />
         </Reveal>
-        <TitleReveal as="span" className="name foil">
-          {bride.firstName}
+        <TitleReveal as="span" className="name">
+          <span className="foil">{bride.firstName}</span>
         </TitleReveal>
       </h1>
       <Reveal as="p" className="when">
