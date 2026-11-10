@@ -11,8 +11,8 @@ const content = {
   show: { transition: { staggerChildren: 0.22, delayChildren: 0.5 } },
 }
 const item = {
-  hidden: { opacity: 0, y: 16, filter: 'blur(10px)' },
-  show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 1.6, ease: EASE } },
+  hidden: { opacity: 0, y: 18 },
+  show: { opacity: 1, y: 0, transition: { duration: 1.5, ease: EASE } },
 }
 
 // Holds the entrance until the web fonts are ready (or 1.2s pass) so text never swaps visibly.
@@ -78,7 +78,7 @@ export default function Gate({ open, onOpen, hasMusic }) {
               variants={content}
               initial="hidden"
               animate={fontsReady ? 'show' : 'hidden'}
-              exit={{ opacity: 0, scale: 0.96, filter: 'blur(8px)', transition: { duration: 0.6, ease: 'easeIn' } }}
+              exit={{ opacity: 0, scale: 0.94, transition: { duration: 0.6, ease: 'easeIn' } }}
             >
               <m.p variants={item} className="mantra" lang="hi">
                 {gate.mantra}

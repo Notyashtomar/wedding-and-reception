@@ -21,7 +21,7 @@
 html { scroll-behavior: smooth; overscroll-behavior-y: none; background: var(--night); -webkit-text-size-adjust: 100%; }
 body {
   font-variant-numeric: lining-nums;
-  background: radial-gradient(ellipse 70% 60% at 50% 30%, #2a0c14 0%, var(--night) 75%) fixed var(--night);
+  background: radial-gradient(ellipse 70% 60% at 50% 30%, #2a0c14 0%, var(--night) 75%) var(--night);
   color: var(--ivory);
   font-family: var(--serif);
   -webkit-font-smoothing: antialiased;
@@ -71,28 +71,17 @@ button { touch-action: manipulation; }
 .layer {
   position: absolute;
   inset: -2% 0;
-  overflow: hidden;
-  will-change: opacity, transform;
-}
-.kb {
-  position: absolute;
-  inset: 0;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   transform-origin: 50% 60%;
-  animation: kenburns 32s ease-in-out infinite alternate both paused;
-  will-change: transform;
+  backface-visibility: hidden;
+  will-change: opacity, transform;
 }
-.layer.live .kb { animation-play-state: running; }
-.layer-wedding .kb { background-position: 38% center; transform-origin: 40% 70%; }
-.layer-venue .kb { transform-origin: 50% 70%; }
-.layer-reception .kb { background-position: 62% center; transform-origin: 70% 40%; }
-.layer-close .kb { transform-origin: 70% 30%; }
-@keyframes kenburns {
-  from { transform: scale(1.02) translate3d(0, 0, 0); }
-  to { transform: scale(1.13) translate3d(-1.2%, -1.6%, 0); }
-}
+.layer-wedding { background-position: 38% center; transform-origin: 40% 70%; }
+.layer-venue { transform-origin: 50% 70%; }
+.layer-reception { background-position: 62% center; transform-origin: 70% 40%; }
+.layer-close { transform-origin: 70% 30%; }
 .vignette {
   position: absolute;
   inset: 0;
@@ -113,6 +102,11 @@ button { touch-action: manipulation; }
   animation: grain 0.9s steps(5) infinite;
   will-change: transform;
 }
+/* On phones the grain is a still, screen-sized layer: an oversized moving texture on top of
+   everything costs more GPU memory and fill than the flicker is worth at that size. */
+@media (hover: none), (pointer: coarse) {
+  .grain { inset: 0; animation: none; will-change: auto; opacity: 0.06; }
+}
 @keyframes grain {
   0% { transform: translate3d(0, 0, 0); }
   20% { transform: translate3d(-4%, 3%, 0); }
@@ -123,16 +117,15 @@ button { touch-action: manipulation; }
 }
 
 /* ---------- shared type ---------- */
+/* Static on purpose: animating a text-clipped background repaints the glyphs (and any
+   drop-shadow filter around them) on every frame. */
 .foil {
-  background: linear-gradient(105deg, #a2722a 0%, #e8cb87 16%, #fff4d2 28%, #c8984a 42%, #f3dda2 58%, #b0802f 74%, #ecd090 88%, #a2722a 100%);
-  background-size: 260% 100%;
+  background: linear-gradient(105deg, #a2722a 0%, #e8cb87 18%, #fff4d2 34%, #c8984a 52%, #f3dda2 70%, #b0802f 86%, #ecd090 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
-  animation: foil 8s ease-in-out infinite alternate;
 }
-@keyframes foil { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
 
 .rule { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 14px auto; color: var(--gold); }
 .rule span { display: block; width: 64px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold)); }
@@ -286,6 +279,12 @@ button { touch-action: manipulation; }
   width: min(100%, 300px);
 }
 .datebox .side {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.35;
+  text-wrap: balance;
   padding: 8px 0;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
@@ -293,7 +292,6 @@ button { touch-action: manipulation; }
   font-size: clamp(11px, 3vw, 12.5px);
   letter-spacing: 0.18em;
   color: var(--ivory-soft);
-  white-space: nowrap;
 }
 .datebox .dd { font-family: var(--display); font-size: clamp(58px, 17vw, 76px); line-height: 1; padding: 0 0.04em; font-weight: 500; }
 .ev-time { margin-top: 12px; font-family: var(--display); font-size: clamp(15px, 4.2vw, 17px); letter-spacing: 0.2em; padding-left: 0.2em; color: var(--gold-pale); }
@@ -311,17 +309,26 @@ button { touch-action: manipulation; }
 }
 .schedule li { position: relative; display: grid; grid-template-columns: 15px 1fr auto; align-items: center; gap: 14px; padding: 9px 0; }
 .schedule .node {
+  position: relative;
   width: 15px;
   height: 15px;
   border-radius: 50%;
   border: 1px solid var(--gold);
   background: radial-gradient(circle, #fff0c4 0 2px, #d9a650 3px, rgba(28, 8, 13, 1) 4px);
   box-shadow: 0 0 10px rgba(255, 190, 90, 0.6);
+}
+.schedule .node::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 196, 100, 0.55), rgba(255, 196, 100, 0) 70%);
+  opacity: 0.2;
   animation: node 3s ease-in-out infinite;
 }
-.schedule li:nth-of-type(2) .node { animation-delay: 1s; }
-.schedule li:nth-of-type(3) .node { animation-delay: 2s; }
-@keyframes node { 50% { box-shadow: 0 0 18px 3px rgba(255, 190, 90, 0.75); } }
+.schedule li:nth-of-type(2) .node::after { animation-delay: 1s; }
+.schedule li:nth-of-type(3) .node::after { animation-delay: 2s; }
+@keyframes node { 50% { opacity: 1; } }
 .schedule .what { display: flex; flex-direction: column; }
 .s-name { font-family: var(--display); font-size: clamp(14.5px, 4vw, 16.5px); letter-spacing: 0.06em; color: var(--ivory); line-height: 1.25; }
 .s-gloss { font-style: italic; font-size: 14.5px; color: var(--ivory-dim); line-height: 1.3; }
@@ -482,6 +489,7 @@ button { touch-action: manipulation; }
   letter-spacing: 0.04em;
   text-decoration: none;
   color: var(--ivory);
+  min-height: 44px;
   padding: 6px 0;
   transition: color 0.25s var(--ease);
 }
@@ -653,10 +661,10 @@ button { touch-action: manipulation; }
 .sound {
   position: fixed;
   z-index: 40;
-  right: max(14px, calc(50% - 240px + 14px));
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
-  width: 42px;
-  height: 42px;
+  right: max(12px, calc(50% - 240px + 12px));
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: 1px solid var(--line);
   background: rgba(22, 8, 12, 0.85);
@@ -692,9 +700,50 @@ button { touch-action: manipulation; }
   to { transform: translateX(16px) rotate(50deg); }
 }
 
+/* ---------- small phones (iPhone SE, compact Androids) ---------- */
+@media (max-width: 370px) {
+  .panel { padding-left: 14px; padding-right: 14px; }
+  .arch { padding: 48px 16px 26px; }
+  .name { font-size: clamp(56px, 18vw, 66px); }
+  .arch .person { font-size: clamp(44px, 13.5vw, 52px); }
+  .hero .elders { font-size: 12.5px; letter-spacing: 0.1em; }
+  .datebox { gap: 10px; }
+  .datebox .side { font-size: 10px; letter-spacing: 0.1em; }
+  .datebox .dd { font-size: clamp(48px, 15vw, 58px); }
+  .schedule li { gap: 10px; }
+  .s-gloss { font-size: 13.5px; }
+  .btn { font-size: 11.5px; letter-spacing: 0.08em; padding: 10px 8px; gap: 6px; }
+  .btn.gold { font-size: 12.5px; }
+  .count { gap: 6px; }
+  .count small { font-size: 9.5px; letter-spacing: 0.14em; padding-left: 0.14em; }
+  .gate .title { font-size: 21px; }
+  .gate button { padding: 15px 26px 15px calc(26px + 0.3em); letter-spacing: 0.24em; }
+  .compl { font-size: 40px; }
+  .chapter .ttl { letter-spacing: 0.28em; }
+}
+
+/* ---------- short screens: keep the whole cover on screen ---------- */
+@media (max-height: 720px) {
+  .gate .ganesh { width: 66px; margin-bottom: 12px; }
+  .gate .mantra { margin-bottom: 10px; }
+  .gate .couple { font-size: clamp(34px, 10vw, 42px); }
+  .gate button { margin-top: 18px; }
+  .gate .note { margin-top: 10px; }
+  .gate .bar { height: 4.5vh; }
+  .hero { padding-top: calc(env(safe-area-inset-top, 0px) + 8vh); }
+}
+@media (max-height: 540px) {
+  .gate .ganesh { display: none; }
+  .gate .mantra { font-size: 14px; }
+  .gate .lead { font-size: 17px; margin-top: 2px; }
+  .gate .title { font-size: 20px; }
+  .gate .note { display: none; }
+  .gate .bar { display: none; }
+  .panel { min-height: 0; padding-top: calc(env(safe-area-inset-top, 0px) + 40px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .cue svg, .gate button::before, .gate .ganesh, .sound .pulse, .seam::before, .schedule .node, .btn.gold::after, .foil, .grain { animation: none; }
-  .kb { animation: none; }
+  .cue svg, .gate button::before, .gate .ganesh, .sound .pulse, .seam::before, .schedule .node::after, .btn.gold::after, .grain { animation: none; }
   .petals { display: none; }
 }

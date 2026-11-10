@@ -3,9 +3,11 @@ import config from '../weddingConfig'
 
 const order = ['hero', 'invite', 'wedding', 'venue', 'reception', 'close']
 const smooth = (x) => x * x * (3 - 2 * x)
+const clamp01 = (x) => Math.max(0, Math.min(1, x))
 
-// Fixed painted backdrops that dissolve into one another as each section scrolls in, with a
-// slow upward drift across the whole page and a Ken Burns push on whichever scene is showing.
+// Fixed painted backdrops that dissolve into one another as each section scrolls in. Each scene
+// also pushes in slowly as its section is scrolled through (a scroll-linked Ken Burns), so the
+// camera only moves when the guest does and nothing animates while the page is at rest.
 export default function Stage({ sectionRefs, children }) {
   const layers = useRef([])
 
@@ -25,42 +27,39 @@ export default function Stage({ sectionRefs, children }) {
   useEffect(() => {
     // Layout is measured only on resize, so the per-frame work reads nothing but scrollY.
     let starts = []
+    let lengths = []
     let span = 1
-    let maxScroll = 1
     const measure = () => {
       const vh = window.innerHeight
       starts = sectionRefs.current.map((s) => (s ? s.offsetTop - vh * 0.85 : 0))
+      lengths = sectionRefs.current.map((s) => (s ? s.offsetHeight + vh : vh))
       span = vh * 0.75
-      maxScroll = document.documentElement.scrollHeight - vh || 1
     }
 
     // Every layer stays composited (never hidden) so the GPU never has to re-rasterise a
-    // full-screen image mid-scroll; only opacity and transform change, and only when they differ.
-    // The Ken Burns animation runs only on layers that can actually be seen.
+    // full-screen image mid-scroll. Only layers that can be seen get new styles, and only
+    // opacity and transform ever change.
     const last = []
-    const lastLive = []
     let ticking = false
     const paint = () => {
       ticking = false
       const y = window.scrollY
-      const drift = `translate3d(0, ${(Math.min(1, y / maxScroll) * -1.5).toFixed(2)}%, 0) scale(1.03)`
-      const opacities = layers.current.map((_, i) =>
-        i === 0 ? 1 : smooth(Math.max(0, Math.min(1, (y - starts[i]) / span))),
-      )
-      layers.current.forEach((layer, i) => {
-        if (!layer) return
-        const o = opacities[i].toFixed(3)
-        const live = opacities[i] > 0 && !(opacities[i + 1] >= 1)
-        if (lastLive[i] !== live) {
-          lastLive[i] = live
-          layer.classList.toggle('live', live)
-        }
-        const key = o + drift
-        if (last[i] === key) return
-        last[i] = key
-        layer.style.opacity = o
-        layer.style.transform = drift
-      })
+      const n = layers.current.length
+      const opacity = []
+      for (let i = 0; i < n; i++) opacity[i] = i === 0 ? 1 : smooth(clamp01((y - starts[i]) / span))
+      for (let i = 0; i < n; i++) {
+        const layer = layers.current[i]
+        if (!layer) continue
+        const covered = i + 1 < n && opacity[i + 1] >= 1
+        const o = covered ? 0 : opacity[i]
+        const p = clamp01((y - starts[i]) / lengths[i])
+        const t = o > 0 ? `translate3d(0, ${(-1.6 * p).toFixed(2)}%, 0) scale(${(1.03 + 0.09 * p).toFixed(4)})` : last[i]?.t
+        const os = o.toFixed(3)
+        if (last[i] && last[i].o === os && last[i].t === t) continue
+        last[i] = { o: os, t }
+        layer.style.opacity = os
+        if (t) layer.style.transform = t
+      }
     }
     const request = () => {
       if (!ticking) {
@@ -89,9 +88,12 @@ export default function Stage({ sectionRefs, children }) {
   return (
     <div className="stage" aria-hidden="true">
       {order.map((key, i) => (
-        <div key={key} ref={(el) => (layers.current[i] = el)} className={`layer layer-${key}`} style={{ opacity: i === 0 ? 1 : 0 }}>
-          <div className="kb" style={{ backgroundImage: `url(${config.images.backgrounds[key]})` }} />
-        </div>
+        <div
+          key={key}
+          ref={(el) => (layers.current[i] = el)}
+          className={`layer layer-${key}`}
+          style={{ backgroundImage: `url(${config.images.backgrounds[key]})`, opacity: i === 0 ? 1 : 0, transform: 'scale(1.03)' }}
+        />
       ))}
       <div className="vignette" />
       {children}

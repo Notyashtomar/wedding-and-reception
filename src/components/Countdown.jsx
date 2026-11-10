@@ -10,9 +10,9 @@ function Digit({ value }) {
       <AnimatePresence mode="popLayout" initial={false}>
         <m.span
           key={text}
-          initial={{ opacity: 0, y: -10, filter: 'blur(4px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          exit={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 10 }}
           transition={{ duration: 0.45, ease: 'easeOut' }}
         >
           {text}

@@ -1,18 +1,20 @@
 import { m } from 'motion/react'
 import { EASE } from '../lib/ease'
 
+// Only opacity and transform are animated on scroll so every reveal stays on the compositor;
+// blur and letter-spacing would repaint or relayout the text on each frame.
 const revealItem = {
-  hidden: { opacity: 0, y: 22, filter: 'blur(8px)' },
-  show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 1.4, ease: EASE } },
+  hidden: { opacity: 0, y: 26 },
+  show: { opacity: 1, y: 0, transition: { duration: 1.2, ease: EASE } },
 }
 
 const group = (delay = 0) => ({
   hidden: {},
-  show: { transition: { staggerChildren: 0.16, delayChildren: delay } },
+  show: { transition: { staggerChildren: 0.14, delayChildren: delay } },
 })
 
-// A full-height section. Its Reveal descendants rise out of a soft blur in sequence once a
-// fifth of the section is on screen, or when `active` becomes true if it is controlled.
+// A full-height section. Its Reveal descendants rise in sequence once a fifth of the section
+// is on screen, or when `active` becomes true if it is controlled.
 export function Panel({ active, delay, className = '', children, ...rest }) {
   const trigger =
     active === undefined
@@ -36,7 +38,7 @@ export function Reveal({ as = 'div', className, children, ...rest }) {
 
 const revealGroup = {
   hidden: revealItem.hidden,
-  show: { ...revealItem.show, transition: { ...revealItem.show.transition, staggerChildren: 0.16 } },
+  show: { ...revealItem.show, transition: { ...revealItem.show.transition, staggerChildren: 0.14 } },
 }
 
 // A container that reveals itself and staggers its own Reveal children.
@@ -49,17 +51,17 @@ export function RevealGroup({ as = 'div', className, children, ...rest }) {
   )
 }
 
-// A title that "tracks in" like a film title card: wide letter-spacing settling as it sharpens.
+// A title that settles into place like a film title card: drifting in from slightly large
+// and wide, purely with transforms.
 const titleItem = {
-  hidden: (spacing) => ({ opacity: 0, letterSpacing: `${spacing + 0.4}em`, filter: 'blur(14px)', scale: 1.08 }),
-  show: (spacing) => ({ opacity: 1, letterSpacing: `${spacing}em`, filter: 'blur(0px)', scale: 1, transition: { duration: 2.2, ease: EASE } }),
+  hidden: { opacity: 0, scale: 1.18, scaleX: 1.12, y: 10 },
+  show: { opacity: 1, scale: 1, scaleX: 1, y: 0, transition: { duration: 2, ease: EASE } },
 }
 
-// `spacing` is the resting letter-spacing in em.
-export function TitleReveal({ as = 'h2', spacing = 0, className, children, ...rest }) {
+export function TitleReveal({ as = 'h2', className, children, ...rest }) {
   const Tag = m[as]
   return (
-    <Tag className={className} variants={titleItem} custom={spacing} {...rest}>
+    <Tag className={className} variants={titleItem} {...rest}>
       {children}
     </Tag>
   )

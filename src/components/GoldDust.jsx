@@ -2,14 +2,16 @@ import { useEffect, useRef } from 'react'
 
 // Glowing motes of gold that rise and twinkle over the whole invitation, like dust in
 // candlelight. One pre-rendered glow sprite is stamped per mote, so a frame costs a few dozen
-// drawImage calls; the loop stops while the tab is hidden.
-export default function GoldDust({ count = 44 }) {
+// drawImage calls; the loop stops while the tab is hidden. The motes are soft blurs, so the
+// canvas is kept at 1x resolution: on a 3x phone that is a ninth of the pixels to upload per frame.
+export default function GoldDust() {
   const ref = useRef(null)
 
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const canvas = ref.current
     const ctx = canvas.getContext('2d')
+    const count = window.matchMedia('(hover: hover) and (pointer: fine)').matches ? 44 : 26
 
     const sprite = document.createElement('canvas')
     sprite.width = sprite.height = 64
@@ -24,13 +26,15 @@ export default function GoldDust({ count = 44 }) {
 
     let w = 0
     let h = 0
+    // Mobile browsers fire resize as the URL bar slides; only reallocate when the size really changes.
     const resize = () => {
-      const dpr = Math.min(2, window.devicePixelRatio || 1)
-      w = canvas.clientWidth
-      h = canvas.clientHeight
-      canvas.width = Math.round(w * dpr)
-      canvas.height = Math.round(h * dpr)
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      const nw = canvas.clientWidth
+      const nh = canvas.clientHeight
+      if (nw === w && Math.abs(nh - h) < 120 && h) return
+      w = nw
+      h = nh
+      canvas.width = w
+      canvas.height = h
     }
     resize()
 
@@ -79,7 +83,7 @@ export default function GoldDust({ count = 44 }) {
       window.removeEventListener('resize', resize)
       document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, [count])
+  }, [])
 
   return <canvas ref={ref} className="dust" aria-hidden="true" />
 }
